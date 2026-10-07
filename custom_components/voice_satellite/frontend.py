@@ -54,7 +54,9 @@ async def async_register_static_paths(hass: HomeAssistant) -> None:
     ]
 
     if Path(MODELS_DIR).is_dir():
-        paths.append(StaticPathConfig(MODELS_URL, MODELS_DIR, True))
+        # No long-lived cache headers: users replace custom models under the
+        # same file name, and a month-long max-age kept browsers on the old one.
+        paths.append(StaticPathConfig(MODELS_URL, MODELS_DIR, False))
 
     if Path(BRAND_DIR).is_dir():
         paths.append(StaticPathConfig(BRAND_URL, BRAND_DIR, True))
