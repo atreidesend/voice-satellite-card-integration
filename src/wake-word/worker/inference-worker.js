@@ -25,7 +25,7 @@
  * matches the main thread, so the model paths just work.
  */
 
-import { loadTFLite, loadMicroModels, loadMicroModel, getMicroModelParams, releaseUnusedMicroModels, resetRuntime } from '../micro-models.js';
+import { loadTFLite, loadMicroModels, loadMicroModel, getMicroModelParams, releaseUnusedMicroModels, resetRuntime, setMicroModelsLogger } from '../micro-models.js';
 import { MicroWakeWordInference } from '../micro-inference.js';
 import { OwwBackend } from '../oww/backend.js';
 import { VwwBackend } from '../vww/backend.js';
@@ -60,6 +60,7 @@ const workerLogger = {
     self.postMessage({ type: 'log', category, message, level: 'error' });
   },
 };
+setMicroModelsLogger(workerLogger);
 
 const SENSITIVITY_MARGIN_FACTORS = {
   'Slightly sensitive': 0.5,

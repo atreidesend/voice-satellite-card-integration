@@ -45,6 +45,23 @@ export const MICRO_MODEL_PARAMS = {
 let _runtime = null;
 let _modelCache = {};
 const _jsonParamsCache = {};
+let _log = null;
+
+/**
+ * Route manifest-loading messages to a logger. The worker passes its own,
+ * so a custom model whose .json can't be read says so instead of silently
+ * running on the 0.90 / window-3 defaults.
+ * @param {{log: Function, error: Function}|null} logger
+ */
+export function setMicroModelsLogger(logger) {
+  _log = logger;
+}
+
+async function _fetchManifest(url, init) {
+  const resp = await fetch(url, init);
+  if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+  return resp.json();
+}
 
 export async function loadTFLite() {
   if (!_runtime) _runtime = { backend: 'custom-js' };
@@ -53,13 +70,25 @@ export async function loadTFLite() {
 
 async function _loadModelManifest(filename) {
   if (filename in _jsonParamsCache) return _jsonParamsCache[filename];
+  const url = withWakeWordAssetVersion(`${MODELS_BASE}/${filename}.json`);
+  let json = null;
   try {
-    const resp = await fetch(withWakeWordAssetVersion(`${MODELS_BASE}/${filename}.json`), { cache: 'no-store' });
-    if (!resp.ok) {
-      _jsonParamsCache[filename] = null;
-      return null;
+    json = await _fetchManifest(url, { cache: 'no-store' });
+  } catch (err) {
+    // Retry once with default caching: a no-store request is the one
+    // fetch here that a WebView or service worker may treat differently.
+    _log?.log('wake-word', `Manifest ${filename}.json: ${err?.message || err} with cache=no-store, retrying`);
+    try {
+      json = await _fetchManifest(url);
+    } catch (err2) {
+      _log?.error('wake-word', `Manifest ${filename}.json unreadable (${err2?.message || err2}) - using default cutoff 0.90, window 3`);
     }
-    const json = await resp.json();
+  }
+  if (!json) {
+    _jsonParamsCache[filename] = null;
+    return null;
+  }
+  try {
     const micro = json.micro || {};
     const params = {
       cutoff: micro.probability_cutoff ?? 0.90,
@@ -68,6 +97,7 @@ async function _loadModelManifest(filename) {
       _source: `${filename}.json`,
     };
     _jsonParamsCache[filename] = params;
+    _log?.log('wake-word', `Manifest ${filename}.json: cutoff=${params.cutoff} window=${params.slidingWindow} step=${params.stepSize}`);
     return params;
   } catch (_) {
     _jsonParamsCache[filename] = null;
