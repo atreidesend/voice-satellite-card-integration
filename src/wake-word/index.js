@@ -946,6 +946,7 @@ export class WakeWordManager {
           if (isStopModelName(result.model)) {
             await this._onStopDetection();
           } else {
+            this._session.wakeCapture?.onDetection({ model: result.model, score: result.score, cutoff: result.cutoff });
             await this._onDetection(result.model);
           }
           return;
@@ -995,6 +996,7 @@ export class WakeWordManager {
     // If muted, silently ignore the detection and resume listening
     if (getSwitchState(session.hass, session.config.satellite_entity, 'mute') === true) {
       this._log.log('wake-word', 'Muted - ignoring wake word detection');
+      session.wakeCapture?.close('muted');
       this._active = true;
       return;
     }

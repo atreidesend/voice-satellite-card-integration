@@ -68,13 +68,17 @@ export async function setupAudioWorklet(mgr, sourceNode) {
     if (mgr._sendInterval || mgr._captureBuffering) {
       mgr.audioBuffer.push(e.data);
     }
-    // Feed on-device wake word engine if active or in stop-only mode (resampled to 16kHz)
+    // Feed on-device wake word engine if active or in stop-only mode (resampled to 16kHz),
+    // and the wake capture's ring buffer always (mci4 fork), from the same resampled block.
     const wakeWord = mgr.card?.wakeWord;
-    if (wakeWord?.active || wakeWord?.stopOnlyMode) {
+    const wakeCapture = mgr.card?.wakeCapture;
+    const feedWakeWord = wakeWord?.active || wakeWord?.stopOnlyMode;
+    if (feedWakeWord || wakeCapture) {
       const samples = mgr.actualSampleRate !== 16000
         ? resample(e.data, mgr.actualSampleRate, 16000)
         : e.data;
-      wakeWord.feedAudio(samples);
+      if (feedWakeWord) wakeWord.feedAudio(samples);
+      wakeCapture?.push(samples); // copies what it keeps; resample() reuses its buffer
     }
   };
   sourceNode.connect(mgr.workletNode);

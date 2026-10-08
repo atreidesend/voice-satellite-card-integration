@@ -176,6 +176,7 @@ export function handleWakeWordEnd(mgr, eventData) {
 /** @param {import('./index.js').PipelineManager} mgr */
 export function handleSttEnd(mgr, eventData) {
   const text = eventData.stt_output?.text || '';
+  mgr.card.wakeCapture?.close('stt-end', text);
   if (text) {
     mgr.currentSttText = text;
     mgr.card.chat.showTranscription(text);
@@ -469,6 +470,7 @@ export function handleTtsEnd(mgr, eventData) {
 /** @param {import('./index.js').PipelineManager} mgr */
 export function handleRunEnd(mgr) {
   mgr.log.log('pipeline', 'Run ended');
+  mgr.card.wakeCapture?.close('run-end');
   mgr.binaryHandlerId = null;
 
   if (mgr.isRestarting) {
@@ -547,6 +549,7 @@ export function handleError(mgr, errorData) {
   const errorMessage = errorData.message || '';
 
   mgr.log.log('error', `${errorCode} - ${errorMessage}`);
+  mgr.card.wakeCapture?.close(`error:${errorCode}`);
 
   // If a show was driving this run, dismiss it so subsequent onTTSComplete
   // / finishRunEnd calls don't think a show is still active. Errors during

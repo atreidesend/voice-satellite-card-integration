@@ -26,6 +26,7 @@ import { ShowManager } from '../show';
 import { MediaPlayerManager } from '../media-player';
 import { getSelectEntityId, getNumberState, getSelectState, getSwitchState } from '../shared/satellite-state.js';
 import { WakeWordManager } from '../wake-word';
+import { WakeCapture } from '../wake-word/wake-capture.js';
 import * as kiosk from '../kiosk/index.js';
 import { ScreensaverManager } from '../screensaver';
 import { DiagnosticsManager } from '../diagnostics';
@@ -110,6 +111,7 @@ export class VoiceSatelliteSession {
 
     // Session-owned managers (receive `this` as "card" reference)
     this._audio = new AudioManager(this);
+    this._wakeCapture = new WakeCapture(this); // mci4 fork: saves the audio of each wake
     this._analyser = new AnalyserManager(this);
     this._tts = new TtsManager(this);
     this._pipeline = new PipelineManager(this);
@@ -158,6 +160,7 @@ export class VoiceSatelliteSession {
   get show() { return this._show; }
   get mediaPlayer() { return this._mediaPlayer; }
   get wakeWord() { return this._wakeWord; }
+  get wakeCapture() { return this._wakeCapture; }
   get screensaver() { return this._screensaver; }
   get diagnostics() { return this._diagnostics; }
   get toast() { return this._toast; }
